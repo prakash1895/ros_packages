@@ -1,0 +1,58 @@
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <iostream>
+#include "opencv2/opencv.hpp"
+#include "opencv2/gpu/gpu.hpp"
+
+class ImageConverter_gpu
+{
+  ros::NodeHandle n;
+  image_transport::ImageTransport it;
+  image_transport::Subscriber image_sub;
+  image_transport::Publisher image_pub;
+  
+public:
+  ImageConverter_gpu() 
+   :it(n) //doubtful ask AJ 
+  {
+    image_sub = it.subscribe("/camera/rgb/image_raw", 1, &ImageConverter_gpu::imageCb,this);
+    image_pub = it.advertise("/image_converter/output_video", 1); 
+  }
+
+  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  {
+    cv_bridge::CvImagePtr cv_ptr;
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+
+
+	cv::Mat src_gray,result_host;
+        cvtColor( cv_ptr->image, src_gray, CV_BGR2GRAY );
+	cv::gpu::GpuMat dst, src;
+        src.upload(src_gray);
+
+        cv::gpu::threshold(src, dst, 128.0, 255.0, CV_THRESH_BINARY);
+	dst.download(result_host);
+        cv::imshow("Result", result_host);
+        cv::waitKey(1);
+   
+ image_pub.publish(cv_ptr->toImageMsg());
+
+  }
+};
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "image_converter_gpu");
+  ImageConverter_gpu ic;
+  ros::spin();
+  cv::destroyWindow("Image window");
+
+  return 0;
+}
+
+
+

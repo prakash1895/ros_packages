@@ -1,0 +1,35 @@
+#include"ros/ros.h"
+#include"std_msgs/String.h"
+#include<sstream>
+
+int main(int argc, char **argv)
+{
+	ros::init(argc, argv, "GPS_publish_string");
+	ros::NodeHandle n;
+
+	ros::Publisher pub_lat = n.advertise<std_msgs::String>("latitude",1000);
+	ros::Publisher pub_long = n.advertise<std_msgs::String>("longitude",1000);
+
+	ros::Rate loop_rate(10);
+	while(ros::ok())
+	{
+		std_msgs::String msg_lat;
+		std_msgs::String msg_long;
+		
+		std::stringstream ss_lat;
+		std::stringstream ss_long;
+
+		ss_long << "10.18";
+		ss_lat << "71.3443"
+
+		msg_lat.data = ss_lat.str();
+		msg_long.data = ss_long.str();
+		
+		pub_lat.publish(msg_lat);
+		pub_long.publish(msg_long);
+
+		ros::spinOnce();
+		loop_rate.sleep();
+	}
+	return 0;
+}	
